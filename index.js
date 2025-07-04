@@ -22,6 +22,7 @@ const cors = require("cors");
 dotenv.config();
 
 mongoose
+    .set('strictQuery', true)
     .connect(process.env.MONGO_URL)
     .then(() => console.log("DB Connection Established"))
     .catch((err) => {
