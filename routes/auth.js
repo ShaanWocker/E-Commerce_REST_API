@@ -3,27 +3,29 @@ const User = require("../models/User");
 const CryptoJS = require("crypto-js");
 const jwt = require("jsonwebtoken");
 
-//REGISTER
+// REGISTER
 router.post("/register", async (req, res) => {
-  const newUser = new User({
-    username: req.body.username,
-    email: req.body.email,
-    password: CryptoJS.AES.encrypt(
+  try {
+    const encryptedPassword = CryptoJS.AES.encrypt(
       req.body.password,
       process.env.PASS_SEC
-    ).toString(),
-  });
+    ).toString();
 
-  try {
+    const newUser = new User({
+      username: req.body.username,
+      email: req.body.email,
+      password: encryptedPassword,
+      img: req.body.img || "", // default to empty string if none
+      isAdmin: req.body.isAdmin || false, // fallback to false if not provided
+    });
+
     const savedUser = await newUser.save();
-    localStorage.setItem("user", JSON.stringify(savedUser));
     res.status(201).json(savedUser);
   } catch (err) {
-    console.error(err);
+    console.error("Registration failed:", err);
     res.status(500).json({ message: "Failed to register user." });
   }
 });
-
 
 //LOGIN
 
