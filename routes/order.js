@@ -1,24 +1,50 @@
 const Order = require("../models/Order");
+const Product = require("../models/Product"); 
 const {
-    verifyToken,
-    verifyTokenAndAdmin, 
-    verifyTokenAndAuthorization
- } = require("./verifyToken");
+  verifyToken,
+  verifyTokenAndAdmin,
+  verifyTokenAndAuthorization,
+} = require("./verifyToken");
 
 const router = require("express").Router();
 
-//CREATE ORDER
-router.post("/",verifyToken, async (req, res) => {
-    const newOrder = new Order(req.body);
+// CREATE ORDER & DEDUCT STOCK
+router.post("/", verifyToken, async (req, res) => {
+  try {
+    // Validate stock before placing the order
+    for (const item of req.body.products) {
+      const product = await Product.findById(item.productId);
+      if (!product) {
+        return res.status(404).json({ message: `Product not found.` });
+      }
 
-    try{
-        const savedOrder = await newOrder.save();
-        res.status(200).json(savedOrder);
-    }catch (err) {
-        res.status(500).json(err);
+      if (product.stock < item.quantity) {
+        return res.status(400).json({
+          message: `Only ${product.stock} left in stock for ${product.title}.`,
+        });
+      }
     }
 
+    // Create the order
+    const newOrder = new Order(req.body);
+    const savedOrder = await newOrder.save();
+
+    // Deduct stock from each product
+    await Promise.all(
+      req.body.products.map(async (item) => {
+        await Product.findByIdAndUpdate(item.productId, {
+          $inc: { stock: -item.quantity },
+        });
+      })
+    );
+
+    res.status(200).json(savedOrder);
+  } catch (err) {
+    console.error("Order creation failed:", err);
+    res.status(500).json({ message: "Order could not be created", error: err });
+  }
 });
+
 
 //UPDATE ORDER
 router.put("/:id", verifyTokenAndAdmin, async (req, res)=>{
