@@ -16,8 +16,17 @@ router.post("/", verifyTokenAndAdmin, async (req, res) => {
 
 // GET ALL MEDIA
 router.get("/", async (req, res) => {
+  const section = req.query.section;
+
   try {
-    const media = await Media.find().sort({ createdAt: -1 });
+    let media;
+
+    if (section) {
+      media = await Media.find({ section });
+    } else {
+      media = await Media.find();
+    }
+
     res.status(200).json(media);
   } catch (err) {
     res.status(500).json(err);
