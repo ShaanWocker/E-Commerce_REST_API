@@ -5,6 +5,7 @@ const MediaSchema = new mongoose.Schema(
     section: { type: String, required: true }, // e.g., slider, categories, popular
     title: { type: String, required: true },
     img: { type: String, required: true },
+    desc: { type: String }, 
     cat: { type: String }, // optional - only for categories
   },
   { timestamps: true }
